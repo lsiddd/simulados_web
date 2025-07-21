@@ -1,0 +1,359 @@
+:root {
+    --cor-fundo-principal: #f8fafc;
+    --cor-fundo-secundario: #f1f5f9;
+    --cor-card: #ffffff;
+    --cor-texto-primario: #0f172a;
+    --cor-texto-secundario: #475569;
+    --cor-destaque: #6366f1;
+    --cor-destaque-hover: #4f46e5;
+    --cor-sucesso: #10b981;
+    --cor-sucesso-hover: #059669;
+    --cor-sucesso-light: #d1fae5;
+    --cor-erro: #ef4444;
+    --cor-erro-light: #fee2e2;
+    --cor-borda: #e2e8f0;
+    --cor-shadow: rgba(149, 157, 165, 0.2);
+    --font-family: 'Inter', sans-serif;
+}
+
+/* --- Reset & Base Styles --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--cor-fundo-principal);
+    color: var(--cor-texto-primario);
+    margin: 0;
+    line-height: 1.6;
+}
+
+#app-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+/* --- Header Styles --- */
+.main-header, .simulado-header {
+    text-align: center;
+    border-bottom: 1px solid var(--cor-borda);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 2rem;
+    color: var(--cor-texto-primario);
+    margin-bottom: 0.5rem;
+}
+
+.main-header p {
+    font-size: 1.1rem;
+    color: var(--cor-texto-secundario);
+}
+
+/* --- Card Styles --- */
+.card {
+    background-color: var(--cor-card);
+    border-radius: 12px;
+    border: 1px solid var(--cor-borda);
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 12px var(--cor-shadow);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+/* --- Grid for Homepage --- */
+.simulados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.simulado-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.simulado-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px var(--cor-shadow);
+}
+
+.simulado-card h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.simulado-card p {
+    color: var(--cor-texto-secundario);
+    flex-grow: 1;
+    margin: 0 0 1.5rem 0;
+}
+
+.badge {
+    background-color: #e0e7ff;
+    color: var(--cor-destaque);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    align-self: flex-start;
+}
+
+
+/* --- Button Styles --- */
+.button {
+    display: inline-block;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.button:hover {
+    transform: translateY(-2px);
+}
+.button:disabled {
+    cursor: not-allowed;
+    background-color: var(--cor-fundo-secundario);
+    color: var(--cor-texto-secundario);
+    opacity: 0.7;
+}
+
+.button-primary {
+    background-color: var(--cor-destaque);
+    color: white;
+}
+.button-primary:hover:not(:disabled) {
+    background-color: var(--cor-destaque-hover);
+}
+
+.button-secondary {
+    background-color: var(--cor-fundo-secundario);
+    color: var(--cor-texto-primario);
+}
+.button-secondary:hover:not(:disabled) {
+    background-color: var(--cor-borda);
+}
+
+.button-success {
+    background-color: var(--cor-sucesso);
+    color: white;
+}
+.button-success:hover:not(:disabled) {
+    background-color: var(--cor-sucesso-hover);
+}
+
+
+/* --- Simulado (Quiz) Page Styles --- */
+.simulado-header .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.simulado-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+.contador-questoes {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--cor-texto-secundario);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--cor-fundo-secundario);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar-inner {
+    height: 100%;
+    width: 0%;
+    background-color: var(--cor-destaque);
+    transition: width 0.3s ease-in-out;
+}
+
+.quiz-card { margin-bottom: 1.5rem; }
+#enunciado-questao {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+}
+
+.alternativas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.alternativa-label {
+    display: block;
+    padding: 1rem;
+    border: 2px solid var(--cor-borda);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.alternativa-label:hover {
+    border-color: var(--cor-destaque);
+}
+.alternativa-label input { display: none; }
+.alternativa-label.selected {
+    border-color: var(--cor-destaque);
+    background-color: #eef2ff;
+}
+.alternativa-label.correct {
+    border-color: var(--cor-sucesso);
+    background-color: var(--cor-sucesso-light);
+    color: var(--cor-sucesso);
+    font-weight: 700;
+}
+.alternativa-label.incorrect {
+    border-color: var(--cor-erro);
+    background-color: var(--cor-erro-light);
+    color: var(--cor-erro);
+    font-weight: 700;
+}
+.alternativa-label.disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.feedback-card {
+    border-left: 5px solid;
+}
+.feedback-card.correct { border-color: var(--cor-sucesso); }
+.feedback-card.incorrect { border-color: var(--cor-erro); }
+#feedback-texto {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+}
+.feedback-card.correct #feedback-texto { color: var(--cor-sucesso); }
+.feedback-card.incorrect #feedback-texto { color: var(--cor-erro); }
+#explicacao-texto {
+    color: var(--cor-texto-secundario);
+    margin: 0;
+}
+
+.resultado-card {
+    text-align: center;
+    padding: 3rem;
+}
+.resultado-card h2 { font-size: 1.8rem; }
+.resultado-card p { font-size: 1.2rem; }
+.resultado-card .button { margin-top: 1.5rem; }
+
+.simulado-footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--cor-borda);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 600px) {
+    #app-container { padding: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .simulado-header .header-content {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .simulado-header h1 { order: 2; }
+    .simulado-header .button { order: 1; align-self: flex-start; }
+    .simulado-header .contador-questoes { order: 3; }
+}
+
+.review-notice {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    background-color: var(--cor-fundo-secundario);
+    border-left: 5px solid var(--cor-destaque);
+}
+
+.review-notice h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--cor-destaque);
+}
+
+.review-notice p {
+    margin: 0;
+    color: var(--cor-texto-secundario);
+}
+
+/* --- ESTILOS PARA NOVAS FUNCIONALIDADES --- */
+
+/* Cabeçalho da Questão com Botão de Marcar */
+.quiz-question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+#enunciado-questao {
+    margin: 0; /* Remove a margem padrão do h2 */
+    flex-grow: 1; /* Faz o texto ocupar o espaço disponível */
+}
+
+.flag-button {
+    background: none;
+    border: 2px solid var(--cor-borda);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0; /* Impede que o botão encolha */
+}
+
+.flag-button:hover {
+    border-color: var(--cor-destaque);
+    transform: scale(1.1);
+}
+
+.flag-button.flagged {
+    background-color: #fffbe6; /* Amarelo claro */
+    border-color: #f59e0b;  /* Amarelo/Laranja */
+}
+
+/* Lista de questões marcadas na tela de resultado */
+#flagged-questions-review {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--cor-borda);
+    text-align: left;
+}
+
+#flagged-questions-review h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+#flagged-questions-review ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#flagged-questions-review li {
+    background-color: var(--cor-fundo-secundario);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}

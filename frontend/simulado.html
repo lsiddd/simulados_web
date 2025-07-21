@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciando Simulado...</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        <header class="simulado-header">
+            <div class="header-content">
+                <a href="index.html" class="button button-secondary">← Voltar</a>
+                <h1 id="simulado-titulo">Carregando...</h1>
+                <div id="contador-questoes" class="contador-questoes">Questão 0/0</div>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-bar-inner" class="progress-bar-inner"></div>
+            </div>
+        </header>
+
+        <main id="quiz-container">
+            <div class="card quiz-card">
+                <!-- ESTRUTURA MODIFICADA PARA INCLUIR O BOTÃO DE MARCAR -->
+                <div class="quiz-question-header">
+                    <h2 id="enunciado-questao"></h2>
+                    <button id="btn-flag-question" class="flag-button" title="Marcar esta questão para revisar depois">
+                        🚩
+                    </button>
+                </div>
+                <div id="alternativas-container" class="alternativas-container"></div>
+            </div>
+
+            <div id="feedback-container" class="card feedback-card hidden">
+                <h3 id="feedback-texto"></h3>
+                <p id="explicacao-texto"></p>
+            </div>
+        </main>
+        
+        <div id="resultado-container" class="card resultado-card hidden">
+             <!-- O resultado final será inserido aqui pelo JavaScript -->
+        </div>
+
+        <footer class="simulado-footer">
+            <button id="btn-confirmar" class="button button-primary" disabled>✓ Confirmar Resposta</button>
+            <button id="btn-proxima" class="button button-success hidden">Próxima →</button>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
