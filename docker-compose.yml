@@ -1,4 +1,3 @@
-# A tag 'version' foi removida para seguir as práticas modernas do Docker Compose.
 services:
   backend:
     build: ./backend

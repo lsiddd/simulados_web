@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,13 +10,26 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<!-- --- IMPROVEMENT: data-theme attribute for dark mode --- -->
+
+<body data-theme="light">
     <div id="app-container">
+        <!-- --- IMPROVEMENT: Toast for error notifications --- -->
+        <div id="error-toast" class="error-toast hidden"></div>
+
         <header class="simulado-header">
-            <div class="header-content">
+            <div class="header-top-row">
                 <a href="index.html" class="button button-secondary">← Voltar</a>
+                <!-- --- IMPROVEMENT: Theme switcher button --- -->
+                <button id="btn-theme-switcher" class="theme-switcher" title="Alterar Tema">☀️</button>
+            </div>
+            <div class="header-content">
                 <h1 id="simulado-titulo">Carregando...</h1>
-                <div id="contador-questoes" class="contador-questoes">Questão 0/0</div>
+                <div class="simulado-meta">
+                    <span id="contador-questoes" class="contador-questoes">Questão 0/0</span>
+                    <!-- --- IMPROVEMENT: Estimated completion time --- -->
+                    <span id="estimated-time" class="estimated-time"></span>
+                </div>
             </div>
             <div class="progress-bar">
                 <div id="progress-bar-inner" class="progress-bar-inner"></div>
@@ -24,12 +38,24 @@
 
         <main id="quiz-container">
             <div class="card quiz-card">
-                <!-- ESTRUTURA MODIFICADA PARA INCLUIR O BOTÃO DE MARCAR -->
                 <div class="quiz-question-header">
                     <h2 id="enunciado-questao"></h2>
-                    <button id="btn-flag-question" class="flag-button" title="Marcar esta questão para revisar depois">
-                        🚩
-                    </button>
+                    <!-- --- IMPROVEMENT: Advanced bookmarking button --- -->
+                    <div class="bookmark-container">
+                        <button id="btn-bookmark" class="bookmark-button" title="Marcar Questão (B)">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24"
+                                height="24">
+                                <path
+                                    d="M5 2h14a1 1 0 0 1 1 1v19.143a.5.5 0 0 1-.766.424L12 18.03l-7.234 4.536A.5.5 0 0 1 4 22.143V3a1 1 0 0 1 1-1Z" />
+                            </svg>
+                        </button>
+                        <!-- --- IMPROVEMENT: Bookmark category dropdown --- -->
+                        <div id="bookmark-options" class="bookmark-options hidden">
+                            <button data-category="review-later">Revisar Depois</button>
+                            <button data-category="difficult">Difícil</button>
+                            <button data-category="favorite">Favorita</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="alternativas-container" class="alternativas-container"></div>
             </div>
@@ -39,16 +65,28 @@
                 <p id="explicacao-texto"></p>
             </div>
         </main>
-        
+
         <div id="resultado-container" class="card resultado-card hidden">
-             <!-- O resultado final será inserido aqui pelo JavaScript -->
+            <!-- O resultado final será inserido aqui pelo JavaScript -->
         </div>
 
         <footer class="simulado-footer">
-            <button id="btn-confirmar" class="button button-primary" disabled>✓ Confirmar Resposta</button>
-            <button id="btn-proxima" class="button button-success hidden">Próxima →</button>
+            <div class="footer-buttons">
+                <button id="btn-confirmar" class="button button-primary" disabled>✓ Confirmar (Enter)</button>
+                <button id="btn-proxima" class="button button-success hidden">Próxima (→)</button>
+            </div>
         </footer>
+    </div>
+
+    <!-- --- IMPROVEMENT: Modal for bookmarked questions --- -->
+    <div id="bookmark-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close-modal">×</button>
+            <h2>🚩 Questões Marcadas</h2>
+            <div id="bookmark-modal-body"></div>
+        </div>
     </div>
     <script src="app.js"></script>
 </body>
+
 </html>
