@@ -10,6 +10,12 @@ services:
       - ./backend/user_data:/app/user_data
     networks:
       - simulados_net
+    # IMPROVEMENT: Adiciona limites de recursos para o contêiner.
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   frontend:
     image: nginx:1.25-alpine
@@ -24,6 +30,12 @@ services:
       - nginx_ssl:/etc/nginx/ssl
     depends_on:
       - backend
+    # IMPROVEMENT: Adiciona limites de recursos para o contêiner.
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     # --- COMANDO CORRIGIDO ---
     # O comando openssl agora está em uma única linha para evitar erros de parsing do shell.
     command: >
@@ -47,3 +59,4 @@ networks:
 
 volumes:
   nginx_ssl:
+  

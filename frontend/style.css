@@ -97,6 +97,7 @@ body {
     background-color: var(--cor-fundo-secundario);
     border-radius: 4px;
     overflow: hidden;
+    margin-top: 1rem;
 }
 
 .progress-bar-inner {
@@ -114,11 +115,46 @@ body {
     padding: 1.5rem 2rem;
     box-shadow: 0 4px 12px var(--cor-shadow);
     transition: transform var(--transition-speed), box-shadow var(--transition-speed), background-color var(--transition-speed);
+    position: relative;
+    overflow: hidden;
+}
+
+.simulados-grid .card {
+    display: flex;
+    flex-direction: column;
+}
+.simulados-grid .card h2 {
+    margin-top: 1rem;
+    font-size: 1.25rem;
+}
+.simulados-grid .card p {
+    flex-grow: 1;
+    color: var(--cor-texto-secundario);
+}
+.simulados-grid .card a,
+.simulados-grid .card button {
+    margin-top: 1rem;
 }
 
 .quiz-card {
     margin-bottom: 1.5rem;
 }
+
+.badge {
+    position: absolute;
+    top: 1rem;
+    right: -1px;
+    background-color: var(--cor-destaque-light);
+    color: var(--cor-destaque);
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px 0 0 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+body[data-theme="dark"] .badge {
+    color: var(--cor-destaque);
+}
+
 
 /* --- Button Styles --- */
 .button {
@@ -241,6 +277,7 @@ body {
 /* --- Feedback & Results --- */
 .feedback-card {
     border-left: 5px solid;
+    margin-top: 1.5rem;
 }
 
 .feedback-card.correct {
@@ -258,12 +295,13 @@ body {
 
 .result-buttons {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 1rem;
     margin-top: 2rem;
 }
 
-/* --- IMPROVEMENT: Bookmarking --- */
+/* --- Bookmarking --- */
 .bookmark-container {
     position: relative;
 }
@@ -283,6 +321,7 @@ body {
 
 .bookmark-button:hover {
     background-color: var(--cor-fundo-secundario);
+    transform: scale(1.1);
 }
 
 .bookmark-button.bookmarked {
@@ -302,6 +341,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    width: max-content;
 }
 
 .bookmark-options button {
@@ -320,7 +360,7 @@ body {
     background-color: var(--cor-fundo-secundario);
 }
 
-/* --- IMPROVEMENT: Modal styles --- */
+/* --- Modal styles --- */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -329,6 +369,7 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 1rem;
 }
 
 .modal-content {
@@ -336,7 +377,7 @@ body {
     padding: 2rem;
     border-radius: 12px;
     max-width: 600px;
-    width: 90%;
+    width: 100%;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
@@ -372,7 +413,7 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* --- IMPROVEMENT: Theme switcher --- */
+/* --- Theme switcher --- */
 .theme-switcher {
     background: none;
     border: 1px solid var(--cor-borda);
@@ -391,13 +432,13 @@ body {
     transform: rotate(15deg) scale(1.1);
 }
 
-/* --- IMPROVEMENT: Error Toast --- */
+/* --- Notification Toast --- */
 .error-toast {
     position: fixed;
     bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
-    background-color: var(--cor-erro);
+    background-color: var(--cor-sucesso);
     color: white;
     padding: 1rem 1.5rem;
     border-radius: 8px;
@@ -405,6 +446,9 @@ body {
     z-index: 2000;
     font-weight: 700;
     transition: opacity 0.3s, transform 0.3s;
+}
+.error-toast.error {
+    background-color: var(--cor-erro);
 }
 
 .error-toast.hidden {
@@ -416,19 +460,51 @@ body {
     display: none !important;
 }
 
+/* --- Homepage & Grids --- */
+.main-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.main-header h1 {
+    margin: 0;
+}
+.main-header p {
+    color: var(--cor-texto-secundario);
+    font-size: 1.1rem;
+}
+
+.simulados-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
 /* --- Tab Navigation Styles --- */
 .tab-nav {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     margin-bottom: 2rem;
     justify-content: center;
+    border-bottom: 1px solid var(--cor-borda);
+}
+.tab-button {
+    border: none;
+    background: none;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    border-radius: 6px 6px 0 0;
+    color: var(--cor-texto-secundario);
+    font-weight: 700;
+    transform: translateY(1px);
 }
 .tab-button.active {
-    background: var(--cor-card);
     color: var(--cor-destaque);
-    border-bottom: 2px solid var(--cor-destaque);
-    z-index: 2;
+    border-bottom-color: var(--cor-destaque);
 }
-#bookmarked-tab-content.hidden {
-    display: none !important;
+
+.review-notice {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 5px solid var(--cor-destaque);
 }

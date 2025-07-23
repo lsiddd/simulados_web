@@ -10,24 +10,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<!-- --- IMPROVEMENT: data-theme attribute for dark mode --- -->
-
+<!-- IMPROVEMENT: data-theme attribute for dark mode -->
 <body data-theme="light">
     <div id="app-container">
-        <!-- --- IMPROVEMENT: Toast for error notifications --- -->
+        <!-- IMPROVEMENT: Toast for notifications (errors and success) -->
         <div id="error-toast" class="error-toast hidden"></div>
 
         <header class="simulado-header">
             <div class="header-top-row">
                 <a href="index.html" class="button button-secondary">← Voltar</a>
-                <!-- --- IMPROVEMENT: Theme switcher button --- -->
+                <!-- IMPROVEMENT: Theme switcher button -->
                 <button id="btn-theme-switcher" class="theme-switcher" title="Alterar Tema">☀️</button>
             </div>
             <div class="header-content">
                 <h1 id="simulado-titulo">Carregando...</h1>
                 <div class="simulado-meta">
                     <span id="contador-questoes" class="contador-questoes">Questão 0/0</span>
-                    <!-- --- IMPROVEMENT: Estimated completion time --- -->
+                    <!-- IMPROVEMENT: Estimated completion time -->
                     <span id="estimated-time" class="estimated-time"></span>
                 </div>
             </div>
@@ -40,7 +39,7 @@
             <div class="card quiz-card">
                 <div class="quiz-question-header">
                     <h2 id="enunciado-questao"></h2>
-                    <!-- --- IMPROVEMENT: Advanced bookmarking button --- -->
+                    <!-- IMPROVEMENT: Advanced bookmarking button -->
                     <div class="bookmark-container">
                         <button id="btn-bookmark" class="bookmark-button" title="Marcar Questão (B)">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24"
@@ -49,7 +48,7 @@
                                     d="M5 2h14a1 1 0 0 1 1 1v19.143a.5.5 0 0 1-.766.424L12 18.03l-7.234 4.536A.5.5 0 0 1 4 22.143V3a1 1 0 0 1 1-1Z" />
                             </svg>
                         </button>
-                        <!-- --- IMPROVEMENT: Bookmark category dropdown --- -->
+                        <!-- IMPROVEMENT: Bookmark category dropdown -->
                         <div id="bookmark-options" class="bookmark-options hidden">
                             <button data-category="review-later">Revisar Depois</button>
                             <button data-category="difficult">Difícil</button>
@@ -79,7 +78,7 @@
         </footer>
     </div>
 
-    <!-- --- IMPROVEMENT: Modal for bookmarked questions --- -->
+    <!-- IMPROVEMENT: Modal for bookmarked questions -->
     <div id="bookmark-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <button class="modal-close" id="btn-close-modal">×</button>
@@ -87,7 +86,8 @@
             <div id="bookmark-modal-body"></div>
         </div>
     </div>
-    <script src="app.js"></script>
+    <!-- MODIFIED: Load the specific module for the quiz page -->
+    <script type="module" src="js/quiz.js"></script>
 </body>
 
 </html>

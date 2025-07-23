@@ -1,29 +1,48 @@
-# Use uma imagem base Python slim para um tamanho menor.
-FROM python:3.9-slim
+# ---- Stage 1: Build ----
+# Usa uma imagem slim para instalar dependências e criar um ambiente virtual.
+FROM python:3.9-slim as builder
 
-# Crie um usuário e grupo não-root para executar a aplicação.
-RUN addgroup --system app && adduser --system --group appuser
-
-# Defina o diretório de trabalho.
+# Define o diretório de trabalho.
 WORKDIR /app
 
-# Copie o arquivo de dependências.
-COPY requirements.txt .
+# Cria um ambiente virtual para isolar as dependências.
+RUN python -m venv /opt/venv
 
-# Instale as dependências.
+# Ativa o ambiente virtual para os comandos RUN subsequentes.
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copia e instala as dependências.
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copie o código da aplicação para o contêiner.
+# ---- Stage 2: Final Image ----
+# Usa uma nova imagem slim para um tamanho final menor.
+FROM python:3.9-slim
+
+# Cria um usuário e grupo não-root para segurança.
+RUN addgroup --system app && adduser --system --group appuser
+
+# Copia o ambiente virtual do estágio de build.
+COPY --from=builder /opt/venv /opt/venv
+
+# Define o diretório de trabalho.
+WORKDIR /app
+
+# Copia o código da aplicação.
 COPY . .
 
-# Mude a propriedade dos arquivos para o novo usuário.
+# Altera a propriedade do diretório da aplicação.
 RUN chown -R appuser:app /app
 
-# Mude para o usuário não-root.
+# Muda para o usuário não-root.
 USER appuser
 
-# Exponha a porta que o Gunicorn irá usar.
+# Disponibiliza os executáveis do ambiente virtual no PATH.
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Expõe a porta que o Gunicorn usará.
 EXPOSE 5000
 
-# Use Gunicorn como o servidor de produção WSGI.
+# Executa a aplicação com Gunicorn a partir do ambiente virtual.
+# worker_processes está definido como 4 no arquivo original, mantendo-o.
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]

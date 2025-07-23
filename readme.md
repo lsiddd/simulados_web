@@ -70,4 +70,3 @@ Crie um arquivo `meu_simulado.json` dentro de `backend/simulados/`:
     }
   ]
 }
-```
