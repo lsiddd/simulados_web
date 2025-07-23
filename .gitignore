@@ -1,2 +1,4 @@
 *.json
 *.txt
+frontend/nginx/auth/.htpasswd
+backend/user_data/app.db

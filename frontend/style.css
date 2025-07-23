@@ -415,3 +415,20 @@ body {
 .hidden {
     display: none !important;
 }
+
+/* --- Tab Navigation Styles --- */
+.tab-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+}
+.tab-button.active {
+    background: var(--cor-card);
+    color: var(--cor-destaque);
+    border-bottom: 2px solid var(--cor-destaque);
+    z-index: 2;
+}
+#bookmarked-tab-content.hidden {
+    display: none !important;
+}

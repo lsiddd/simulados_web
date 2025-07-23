@@ -15,9 +15,19 @@
             <h1>📚 Plataforma de Simulados</h1>
             <p>Escolha um simulado abaixo para começar seus estudos</p>
         </header>
+        <nav class="tab-nav" style="margin-bottom: 2rem;">
+            <button id="tab-simulados" class="tab-button">Simulados</button>
+            <button id="tab-bookmarked" class="tab-button">Marcadas</button>
+        </nav>
+        <section id="saved-progress-list" class="simulados-grid">
+            <!-- Progresso salvo será inserido aqui pelo JavaScript -->
+        </section>
         <main id="simulados-grid" class="simulados-grid">
             <!-- Cards dos simulados serão inseridos aqui pelo JavaScript -->
         </main>
+        <div id="bookmarked-tab-content" class="simulados-grid hidden">
+            <!-- Questões marcadas serão inseridas aqui pelo JavaScript -->
+        </div>
     </div>
     <script src="app.js"></script>
 </body>
