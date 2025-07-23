@@ -1,48 +1,81 @@
 # ---- Stage 1: Build ----
-# Usa uma imagem slim para instalar dependências e criar um ambiente virtual.
-FROM python:3.9-slim as builder
+FROM python:3.11-slim as builder
 
-# Define o diretório de trabalho.
+# OPTIMIZATION: Install system dependencies for better performance
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Define o diretório de trabalho
 WORKDIR /app
 
-# Cria um ambiente virtual para isolar as dependências.
+# Create virtual environment
 RUN python -m venv /opt/venv
 
-# Ativa o ambiente virtual para os comandos RUN subsequentes.
+# Activate virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copia e instala as dependências.
+# OPTIMIZATION: Install wheel first for faster builds
+RUN pip install --no-cache-dir --upgrade pip wheel
+
+# Copy and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---- Stage 2: Final Image ----
-# Usa uma nova imagem slim para um tamanho final menor.
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Cria um usuário e grupo não-root para segurança.
-RUN addgroup --system app && adduser --system --group appuser
+# OPTIMIZATION: Install runtime dependencies including curl for health checks
+RUN apt-get update && apt-get install -y \
+    curl \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Copia o ambiente virtual do estágio de build.
+# Create non-root user for security
+# Create non-root user for security
+RUN addgroup --system --gid 1001 app && \
+    adduser --system --uid 1001 --ingroup app appuser
+
+# Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Define o diretório de trabalho.
+# Set working directory
 WORKDIR /app
 
-# Copia o código da aplicação.
+# Copy application code
 COPY . .
 
-# Altera a propriedade do diretório da aplicação.
-RUN chown -R appuser:app /app
+# OPTIMIZATION: Create necessary directories and set permissions
+RUN mkdir -p user_data simulados && \
+    chown -R appuser:app /app && \
+    chown -R appuser:app /opt/venv
 
-# Muda para o usuário não-root.
+# Switch to non-root user
 USER appuser
 
-# Disponibiliza os executáveis do ambiente virtual no PATH.
+# Make virtual environment available
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Expõe a porta que o Gunicorn usará.
+# OPTIMIZATION: Set Python environment variables for better performance
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONHASHSEED=random
+
+# Expose port
 EXPOSE 5000
 
-# Executa a aplicação com Gunicorn a partir do ambiente virtual.
-# worker_processes está definido como 4 no arquivo original, mantendo-o.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]
+# OPTIMIZATION: Use gunicorn with optimized settings
+CMD ["gunicorn", \
+     "--bind", "0.0.0.0:5000", \
+     "--workers", "4", \
+     "--worker-class", "sync", \
+     "--worker-connections", "1000", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--preload", \
+     "--timeout", "30", \
+     "--keep-alive", "5", \
+     "--log-level", "info", \
+     "app:app"]
