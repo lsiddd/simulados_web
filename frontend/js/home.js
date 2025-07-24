@@ -45,67 +45,88 @@ function renderSimuladosList() {
             <div class="badge">${simulado.questoes_count} Questões</div>
             <h2>${simulado.titulo}</h2>
             <p>${simulado.descricao}</p>
-            <a href="simulado.html?id=${simulado.id}" class="button button-primary">▶ Iniciar Simulado</a>
+            <a href="simulado.html?id=${simulado.id}&start=true" class="button button-primary">▶ Iniciar Simulado</a>
         </div>
     `).join('');
 }
 
 /**
- * Renders cards for quizzes with saved progress from localStorage.
+ * Renders cards for quizzes with saved progress from the backend API.
  */
-function renderSavedProgress() {
+async function renderSavedProgress() {
     if (!savedProgressList) return;
 
-    // Use a more specific key to avoid conflicts
-    const savedKeys = Object.keys(localStorage).filter(k => k.startsWith('simuladoProgress_'));
+    try {
+        // CORREÇÃO: Busca o progresso da API em vez do localStorage
+        const response = await fetch(`${API_BASE_URL}/user/progress`);
+        if (!response.ok) {
+            savedProgressList.innerHTML = ''; // Limpa em caso de erro na resposta
+            return;
+        }
 
-    if (savedKeys.length === 0) {
-        savedProgressList.innerHTML = '';
-        return;
-    }
-    
-    const cards = savedKeys.map(key => {
-        try {
-            const simuladoId = key.replace('simuladoProgress_', '');
-            const simulado = allSimulados.find(s => s.id === simuladoId);
-            if (!simulado) return ''; // Progress for a quiz that no longer exists
+        const savedQuizzes = await response.json();
 
-            const progress = JSON.parse(localStorage.getItem(key));
+        if (savedQuizzes.length === 0) {
+            savedProgressList.innerHTML = '';
+            return;
+        }
+        
+        const cards = savedQuizzes.map(saved => {
+            const { simulado_id, titulo, descricao, questoes_count, progress } = saved;
+            if (!progress) return '';
+
             const current = (progress.currentQuestionIndex || 0) + 1;
-            const total = simulado.questoes_count || 0;
+            const total = questoes_count || 0;
+            
+            // CORREÇÃO: Usa 'data-id' para o ID do simulado ao invés de uma chave de storage
             return `
                 <div class="card simulado-card">
                     <div class="badge">Progresso Salvo</div>
-                    <h2>${simulado.titulo}</h2>
-                    <p>${simulado.descricao}</p>
+                    <h2>${titulo}</h2>
+                    <p>${descricao}</p>
                     <p><strong>Questão:</strong> ${current} de ${total}</p>
-                    <a href="simulado.html?id=${simulado.id}" class="button button-success">⏩ Retomar Simulado</a>
-                    <button class="button button-secondary btn-remove-progress" data-key="${key}">Remover</button>
+                    <a href="simulado.html?id=${simulado_id}" class="button button-success">⏩ Retomar Simulado</a>
+                    <button class="button button-secondary btn-remove-progress" data-id="${simulado_id}">Remover</button>
                 </div>
             `;
-        } catch {
-            return ''; // Ignore malformed progress data
-        }
-    }).filter(Boolean).join('');
+        }).filter(Boolean).join('');
 
-    if (cards.length === 0) {
-        savedProgressList.innerHTML = '';
-    } else {
-        savedProgressList.innerHTML = `<h2 style="width:100%;">Progresso Salvo</h2>` + cards;
+        if (cards.length === 0) {
+            savedProgressList.innerHTML = '';
+        } else {
+            savedProgressList.innerHTML = `<h2 style="width:100%;">Progresso Salvo</h2>` + cards;
+        }
+    } catch (error) {
+        console.error("Falha ao buscar progresso salvo:", error);
+        savedProgressList.innerHTML = ''; // Limpa a seção em caso de erro na rede
     }
 }
 
-// EFFICIENT JS: Use event delegation for the "remove progress" buttons
-savedProgressList.addEventListener('click', function(e) {
+// CORREÇÃO: Atualiza o event listener para usar a API para remover o progresso
+savedProgressList.addEventListener('click', async function(e) {
     if (e.target && e.target.matches('.btn-remove-progress')) {
-        const key = e.target.getAttribute('data-key');
-        if (key) {
-            localStorage.removeItem(key);
-            showToast('Progresso removido.');
-            renderSavedProgress(); // Re-render only this section, no page reload
+        const simuladoId = e.target.getAttribute('data-id');
+        if (simuladoId) {
+            try {
+                // Envia uma requisição para a API para limpar o progresso
+                const response = await fetch(`${API_BASE_URL}/user/progress/${simuladoId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Enviar um objeto vazio para limpar
+                });
+
+                if (!response.ok) throw new Error('Falha ao remover progresso.');
+
+                showToast('Progresso removido.');
+                renderSavedProgress(); // Re-renderiza a lista de progresso
+            } catch (error) {
+                console.error(error);
+                showToast('Erro ao remover o progresso.', true);
+            }
         }
     }
 });
+
 
 // --- TABS & LAZY LOADING ---
 
@@ -174,15 +195,16 @@ async function renderAllBookmarkedQuestions() {
             </div>
         `).join('');
 
-        // EFFICIENT JAVASCRIPT: Use event delegation for "study question" buttons
         bookmarkedTabContent.addEventListener('click', function(e) {
             if (e.target && e.target.matches('.btn-one-question')) {
                 const simuladoId = e.target.getAttribute('data-simulado');
                 const questionHash = e.target.getAttribute('data-question-hash');
-                if (simuladoId && questionHash) {
-                    sessionStorage.setItem('oneQuestionSimulado', JSON.stringify({ simuladoId, questionHash }));
-                    window.location.href = `simulado.html?id=${simuladoId}&one=1`;
-                }
+                
+                // Store as string instead of object
+                sessionStorage.setItem('targetQuestionHash', questionHash);
+                sessionStorage.setItem('targetSimuladoId', simuladoId);
+                
+                window.location.href = `simulado.html?id=${simuladoId}&one=1`;
             }
         });
 

@@ -127,6 +127,51 @@ def is_cache_valid(cache_key):
         return False
     return datetime.now() - _cache_timestamps[cache_key] < timedelta(seconds=CACHE_TTL)
 
+@app.route("/api/user/progress", methods=["GET"])
+def get_all_progress():
+    """
+    CORREÇÃO: Novo endpoint para buscar todos os progressos salvos
+    e mesclá-los com os metadados dos simulados.
+    """
+    conn = get_db_connection()
+    try:
+        # Primeiro, obtemos a lista de todos os simulados disponíveis (usando o cache existente)
+        simulados_response = get_simulados_list()
+        simulados_list = simulados_response.get_json()
+        simulados_map = {s['id']: s for s in simulados_list}
+
+        # Em seguida, buscamos todos os registros de progresso do banco de dados
+        c = conn.cursor()
+        c.execute("SELECT simulado_id, data FROM progress WHERE data IS NOT NULL AND data != '{}'")
+        rows = c.fetchall()
+        
+        progress_list = []
+        for row in rows:
+            simulado_id = row['simulado_id']
+            # Verificamos se o simulado para o progresso salvo ainda existe
+            if simulado_id in simulados_map:
+                try:
+                    progress_data = json.loads(row['data'])
+                    simulado_info = simulados_map[simulado_id]
+                    
+                    # Montamos um objeto completo para o frontend
+                    progress_list.append({
+                        "simulado_id": simulado_id,
+                        "titulo": simulado_info.get('titulo', 'Título Indisponível'),
+                        "descricao": simulado_info.get('descricao', ''),
+                        "questoes_count": simulado_info.get('questoes_count', 0),
+                        "progress": progress_data
+                    })
+                except json.JSONDecodeError:
+                    app.logger.error(f"Erro ao decodificar o progresso JSON para o simulado {simulado_id}")
+        
+        return jsonify(progress_list)
+    except Exception as e:
+        app.logger.error(f"Erro ao buscar todos os progressos: {e}")
+        return jsonify({"error": "Erro interno ao buscar progressos."}), 500
+    finally:
+        return_db_connection(conn)
+
 @app.route("/api/simulados", methods=["GET"])
 def get_simulados_list():
     """OPTIMIZED: API endpoint para listar os simulados disponíveis com caching."""

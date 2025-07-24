@@ -1,4 +1,4 @@
-*.json
-*.txt
+files.txt
+backend/simulados/*.json
 frontend/nginx/auth/.htpasswd
-backend/user_data/app.db
+# backend/user_data/*
