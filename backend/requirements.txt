@@ -1,21 +1,5 @@
-# Core dependencies
 Flask==2.3.3
 Werkzeug==2.3.7
-
-# OPTIMIZATION: High-performance WSGI server
 gunicorn==21.2.0
-
-# OPTIMIZATION: Better JSON handling (optional but recommended)
 orjson==3.9.7
-
-# OPTIMIZATION: For potential Redis integration
-redis==5.0.1
-
-# OPTIMIZATION: For better SQLite performance (optional)
 apsw==3.43.0.0
-
-# Security and validation
-Werkzeug==2.3.7
-
-# Development and debugging (only install in development)
-# flask-debugtoolbar==0.13.1

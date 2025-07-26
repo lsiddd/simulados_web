@@ -1,17 +1,11 @@
-
-// --- CONFIGURATION ---
 export const API_BASE_URL = '/api';
-
-// --- MOCK ANALYTICS ---
 export const Analytics = {
     track: (eventName, properties) => {
         console.log(`[Analytics] Event: ${eventName}`, properties);
-        // Em um aplicativo real, você enviaria esses dados para um serviço
-        // como Google Analytics, Mixpanel, etc.
+        
+        
     }
 };
-
-// --- THEME MANAGEMENT ---
 export async function initTheme() {
     const themeSwitcher = document.getElementById('btn-theme-switcher');
     try {
@@ -20,18 +14,16 @@ export async function initTheme() {
         const savedTheme = data.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         setTheme(savedTheme, false);
     } catch (e) {
-        // fallback to system preference
+        
         const fallbackTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         setTheme(fallbackTheme, false);
     }
-
-    // Attach listener only if the button exists on the current page
+    
     themeSwitcher?.addEventListener('click', () => {
         const newTheme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
         setTheme(newTheme, true);
     });
 }
-
 export async function setTheme(theme, save = true) {
     const themeSwitcher = document.getElementById('btn-theme-switcher');
     document.body.setAttribute('data-theme', theme);
@@ -50,9 +42,6 @@ export async function setTheme(theme, save = true) {
         }
     }
 }
-
-// --- UTILITY FUNCTIONS ---
-
 /**
  * Generates a simple, non-cryptographic hash from a string.
  * @param {string} enunciado The string to hash.
@@ -64,11 +53,10 @@ export function getQuestionHash(enunciado) {
     for (i = 0; i < enunciado.length; i++) {
         chr = enunciado.charCodeAt(i);
         hash = ((hash << 5) - hash) + chr;
-        hash |= 0; // Convert to 32bit integer
+        hash |= 0; 
     }
     return hash;
 }
-
 /**
  * Displays a temporary notification toast.
  * @param {string} message The message to display.
@@ -77,14 +65,12 @@ export function getQuestionHash(enunciado) {
 export function showToast(message, isError = false) {
     const toast = document.getElementById('error-toast');
     if (!toast) return;
-
     toast.textContent = message;
-    toast.className = 'error-toast'; // Reset classes
+    toast.className = 'error-toast'; 
     if (isError) {
-        toast.classList.add('error'); // Use a specific class for error styling
+        toast.classList.add('error'); 
     }
     toast.classList.remove('hidden');
-
     setTimeout(() => {
         toast.classList.add('hidden');
     }, isError ? 5000 : 3000);

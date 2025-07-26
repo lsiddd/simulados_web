@@ -1,23 +1,17 @@
 import { API_BASE_URL, Analytics, initTheme, getQuestionHash, showToast } from './common.js';
-
-// --- CONFIGURATION ---
 const DONT_KNOW_ANSWER = "Não sei";
-const AVG_TIME_PER_QUESTION_MS = 30000; // 30 segundos para estimativa
-
-// --- STATE MANAGEMENT ---
+const AVG_TIME_PER_QUESTION_MS = 30000; 
 let quizData = {};
 let originalQuestions = [];
 let incorrectQuestions = [];
 let incorrectQuestionsLog = {};
-let bookmarkedQuestions = []; // Apenas para a sessão atual, para feedback visual
-let allUserBookmarks = [];    // Lista global de todos os marcadores do usuário
+let bookmarkedQuestions = []; 
+let allUserBookmarks = [];    
 let currentQuestionIndex = 0;
 let score = 0;
 let selectedAnswer = null;
 let isReviewMode = false;
 let questionStartTime = 0;
-
-// --- DOM ELEMENTS (Cached for efficiency) ---
 const quizPage = document.getElementById('quiz-container');
 const quizTitle = document.getElementById('simulado-titulo');
 const questionCounter = document.getElementById('contador-questoes');
@@ -34,22 +28,17 @@ const btnNext = document.getElementById('btn-proxima');
 const btnSaveProgress = document.getElementById('btn-salvar-progresso');
 const btnBookmark = document.getElementById('btn-bookmark');
 const bookmarkOptions = document.getElementById('bookmark-options');
-
-// --- APP INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-
     const params = new URLSearchParams(window.location.search);
     const simuladoId = params.get('id');
     if (simuladoId) {
         startSimulado(simuladoId);
         addEventListeners();
     } else {
-        window.location.href = 'index.html'; // Redirect if no ID is provided
+        window.location.href = 'index.html'; 
     }
 });
-
-// --- EVENT LISTENERS ---
 function addEventListeners() {
     btnConfirm?.addEventListener('click', confirmAnswer);
     btnNext?.addEventListener('click', nextQuestion);
@@ -57,8 +46,7 @@ function addEventListeners() {
         saveProgress();
         showToast('Progresso salvo com sucesso!');
     });
-
-    // Keyboard shortcuts
+    
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && selectedAnswer !== 'CONFIRMED') {
             btnConfirm.click();
@@ -77,18 +65,23 @@ function addEventListeners() {
         }
     });
 }
+// Path: frontend/js/quiz.js
 
-// --- QUIZ PAGE LOGIC ---
-// ✅ CÓDIGO CORRIGIDO
+/**
+ * Initializes the quiz, fetching data and setting up the initial state.
+ * It handles resuming from saved progress, starting a new quiz, or loading a single bookmarked question.
+ * @param {string} simuladoId - The ID of the quiz to load.
+ */
 async function startSimulado(simuladoId) {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const isOneQuestion = urlParams.get('one') === '1';
-        let oneQuestionData = null;
-        if (isOneQuestion && sessionStorage.getItem('oneQuestionSimulado')) {
-            oneQuestionData = JSON.parse(sessionStorage.getItem('oneQuestionSimulado'));
-            if (oneQuestionData.simuladoId !== simuladoId) oneQuestionData = null;
-        }
+        
+        // **BUG FIX START**
+        // The check for 'oneQuestionSimulado' is removed.
+        // We now check directly for the items set in home.js.
+        const targetSimuladoId = sessionStorage.getItem('targetSimuladoId');
+        const targetQuestionHash = sessionStorage.getItem('targetQuestionHash');
 
         const [quizResponse, bookmarksResponse] = await Promise.all([
             fetch(`${API_BASE_URL}/simulados/${simuladoId}`),
@@ -96,9 +89,10 @@ async function startSimulado(simuladoId) {
         ]);
 
         if (!quizResponse.ok) throw new Error('Falha ao carregar os dados do simulado.');
+        
         quizData = await quizResponse.json();
         originalQuestions = quizData.questoes.map((q, index) => ({ ...q, originalIndex: index }));
-
+        
         if (bookmarksResponse.ok) {
             allUserBookmarks = await bookmarksResponse.json();
         } else {
@@ -108,24 +102,21 @@ async function startSimulado(simuladoId) {
         document.title = quizData.titulo;
         quizTitle.textContent = quizData.titulo;
 
-        if (isOneQuestion && oneQuestionData) {
-            handleOneQuestionMode(oneQuestionData);
+        // Corrected condition to enter one-question mode
+        if (isOneQuestion && targetSimuladoId === simuladoId && targetQuestionHash) {
+            handleOneQuestionMode(); // The function no longer needs parameters
             return;
         }
+        // **BUG FIX END**
 
-        // --- LÓGICA CORRIGIDA ABAIXO ---
         const shouldStartNew = urlParams.get('start') === 'true';
-
         if (shouldStartNew) {
-            // Se o link "Iniciar" foi clicado, limpa o progresso antigo e reinicia.
             await clearProgress();
             resetQuizState();
             Analytics.track('quiz_started', { quizId: quizData.id, totalQuestions: originalQuestions.length });
         } else if (await checkForSavedProgress()) {
-            // Se não, tenta retomar (comportamento padrão).
             Analytics.track('quiz_resumed', { quizId: quizData.id });
         } else {
-            // Se não há progresso para retomar, inicia do zero.
             resetQuizState();
             Analytics.track('quiz_started', { quizId: quizData.id, totalQuestions: originalQuestions.length });
         }
@@ -137,23 +128,21 @@ async function startSimulado(simuladoId) {
                 category: b.category,
                 enunciado: b.enunciado
             }));
-
         displayCurrentQuestion();
-
     } catch (error) {
         showError(error.message, true);
     }
 }
 
-
 /**
- * CORREÇÃO FINAL: Esta função foi completamente reescrita para configurar corretamente
- * o estado para o modo de questão única, sem chamar resetQuizState().
+ * Sets up the quiz state for single-question mode based on data from sessionStorage.
+ * This function is now self-contained and retrieves data directly from sessionStorage.
  */
-function handleOneQuestionMode(oneQuestionData) {
+function handleOneQuestionMode() {
     const targetSimuladoId = sessionStorage.getItem('targetSimuladoId');
     const targetQuestionHash = sessionStorage.getItem('targetQuestionHash');
     
+    // This check is now the single source of truth for this mode.
     if (!targetSimuladoId || !targetQuestionHash) {
         showError('Dados da questão marcada não encontrados.', true);
         return;
@@ -163,6 +152,7 @@ function handleOneQuestionMode(oneQuestionData) {
         const currentQuestionHash = String(getQuestionHash(questionObject.enunciado));
         return currentQuestionHash === targetQuestionHash;
     });
+
     if (!foundQuestion) {
         console.error("DEBUG: Hash da questão marcada não foi encontrado no simulado.", {
             targetHash: targetQuestionHash,
@@ -171,15 +161,14 @@ function handleOneQuestionMode(oneQuestionData) {
         showError('Não foi possível encontrar a questão marcada. O simulado pode ter sido atualizado ou a questão removida.', true);
         return;
     }
-
-    // Configura o estado manualmente para o modo de questão única
+    
+    // Configure the quiz for a single question
     quizData.questoes = [foundQuestion];
     originalQuestions = [foundQuestion];
     currentQuestionIndex = 0;
     score = 0;
     isReviewMode = false;
     
-    // Popula a lista de marcadores da sessão para que o ícone seja exibido corretamente
     bookmarkedQuestions = allUserBookmarks
         .filter(b => b.simulado_id === targetSimuladoId)
         .map(b => ({
@@ -189,43 +178,56 @@ function handleOneQuestionMode(oneQuestionData) {
         }));
 
     displayCurrentQuestion();
-    sessionStorage.removeItem('oneQuestionSimulado');
+    
+    // Clean up session storage after use
     window.handleEndOfQuiz = showOneQuestionResult;
-
-    // Clear session storage after use
     sessionStorage.removeItem('targetQuestionHash');
     sessionStorage.removeItem('targetSimuladoId');
 }
+
 
 function displayCurrentQuestion() {
     if (currentQuestionIndex >= quizData.questoes.length) {
         window.handleEndOfQuiz ? window.handleEndOfQuiz() : handleEndOfQuiz();
         return;
     }
-
     resetQuestionUI();
     questionStartTime = Date.now();
     const question = quizData.questoes[currentQuestionIndex];
     questionStatement.textContent = question.enunciado;
-
     setupBookmarkButton(question);
-
     alternativesContainer.innerHTML = '';
     const alternativasComNaoSei = [...question.alternativas, DONT_KNOW_ANSWER];
 
     alternativasComNaoSei.forEach((alt, index) => {
         const id = `alt-${index}`;
+
+        // Cria o elemento <label>
         const alternativaEl = document.createElement('label');
         alternativaEl.className = 'alternativa-label';
         alternativaEl.htmlFor = id;
-        alternativaEl.innerHTML = `<input type="radio" id="${id}" name="alternativa" value="${alt}"><span>${alt}</span>`;
+
+        // Cria o elemento <input>
+        const inputEl = document.createElement('input');
+        inputEl.type = 'radio';
+        inputEl.id = id;
+        inputEl.name = 'alternativa';
+        inputEl.value = alt;
+
+        // Cria o elemento <span> para o texto da alternativa
+        const spanEl = document.createElement('span');
+        // USA textContent PARA INSERIR O TEXTO DE FORMA SEGURA
+        spanEl.textContent = alt;
+
+        // Anexa os elementos criados ao <label>
+        alternativaEl.appendChild(inputEl);
+        alternativaEl.appendChild(spanEl);
+
         alternativaEl.addEventListener('click', () => handleAnswerSelection(alt, alternativaEl));
         alternativesContainer.appendChild(alternativaEl);
     });
-
     updateProgress();
 }
-
 function handleAnswerSelection(answer, labelElement) {
     if (selectedAnswer === 'CONFIRMED') return;
     document.querySelectorAll('.alternativa-label.selected').forEach(el => el.classList.remove('selected'));
@@ -233,7 +235,6 @@ function handleAnswerSelection(answer, labelElement) {
     selectedAnswer = answer;
     btnConfirm.disabled = false;
 }
-
 function resetQuestionUI() {
     selectedAnswer = null;
     feedbackContainer.classList.add('hidden');
@@ -242,13 +243,11 @@ function resetQuestionUI() {
     btnNext.classList.add('hidden');
     bookmarkOptions.classList.add('hidden');
 }
-
 function updateProgress() {
     const totalQuestions = quizData.questoes.length;
     questionCounter.textContent = `Questão ${currentQuestionIndex + 1} de ${totalQuestions}`;
     const progressPercentage = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
     progressBarInner.style.width = `${progressPercentage}%`;
-
     const remainingQuestions = totalQuestions - currentQuestionIndex;
     const estimatedMs = remainingQuestions * AVG_TIME_PER_QUESTION_MS;
     const minutes = Math.ceil(estimatedMs / 60000);
@@ -259,17 +258,13 @@ function updateProgress() {
         estimatedTime.textContent = '';
     }
 }
-
 function confirmAnswer() {
     if (selectedAnswer === null || selectedAnswer === 'CONFIRMED') return;
-
     const timeTaken = Date.now() - questionStartTime;
     const question = quizData.questoes[currentQuestionIndex];
     const isCorrect = selectedAnswer === question.alternativa_correta && selectedAnswer !== DONT_KNOW_ANSWER;
     const questionHash = getQuestionHash(question.enunciado);
-
     Analytics.track('Youtubeed', { quizId: quizData.id, questionIndex: currentQuestionIndex, isCorrect, timeTaken });
-
     if (isCorrect) {
         if (!isReviewMode) score++;
         if (isReviewMode) {
@@ -282,30 +277,25 @@ function confirmAnswer() {
         }
         logIncorrectAnswer(question);
     }
-
     feedbackContainer.classList.remove('hidden', 'correct', 'incorrect');
     feedbackContainer.classList.add(isCorrect ? 'correct' : 'incorrect');
     feedbackText.textContent = isCorrect ? '🎉 Resposta Correta!' : (selectedAnswer === DONT_KNOW_ANSWER ? '🧠 Resposta pulada' : '❌ Resposta Incorreta');
     explanationText.textContent = `A resposta correta é: "${question.alternativa_correta}".\n\n${question.explicacao}`;
-
     document.querySelectorAll('.alternativa-label').forEach(label => {
         const input = label.querySelector('input');
         label.classList.add('disabled');
         if (input.value === question.alternativa_correta) label.classList.add('correct');
         else if (input.value === selectedAnswer) label.classList.add('incorrect');
     });
-
     btnConfirm.classList.add('hidden');
     btnNext.classList.remove('hidden');
     selectedAnswer = 'CONFIRMED';
 }
-
 function nextQuestion() {
     currentQuestionIndex++;
     saveProgress();
     displayCurrentQuestion();
 }
-
 function handleEndOfQuiz() {
     if (incorrectQuestions.length > 0) {
         startReview();
@@ -314,12 +304,10 @@ function handleEndOfQuiz() {
     }
 }
 window.handleEndOfQuiz = handleEndOfQuiz;
-
 function startReview() {
     isReviewMode = true;
     quizData.questoes = [...incorrectQuestions];
     resetQuizState(); 
-
     let reviewNotice = document.querySelector('.review-notice');
     if (!reviewNotice) {
         reviewNotice = document.createElement('div');
@@ -327,10 +315,8 @@ function startReview() {
         quizPage.prepend(reviewNotice);
     }
     reviewNotice.innerHTML = `<h3>🔄 Modo de Revisão</h3><p>Vamos repassar as ${quizData.questoes.length} questões que você ainda não acertou.</p>`;
-
     displayCurrentQuestion();
 }
-
 function resetQuizState() {
     currentQuestionIndex = 0;
     if (!isReviewMode) {
@@ -340,22 +326,18 @@ function resetQuizState() {
         loadIncorrectAnswerLog();
     }
 }
-
 function showFinalResults() {
     Analytics.track('quiz_completed', { quizId: quizData.id, score, total: originalQuestions.length });
     sendIncorrectAnswerLog();
     clearProgress();
-
     quizPage.classList.add('hidden');
     document.querySelector('.simulado-footer')?.classList.add('hidden');
     document.querySelector('.review-notice')?.remove();
-
     const totalQuestions = originalQuestions.length;
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
     let bookmarkButtonHTML = bookmarkedQuestions.length > 0
         ? `<button id="btn-review-bookmarks" class="button button-secondary">Revisar Questões Marcadas</button>`
         : '';
-
     resultContainer.innerHTML = `
         <h2>🎯 Simulado Concluído!</h2>
         <p>Você acertou ${score} de ${totalQuestions} questões (${percentage}%).</p>
@@ -368,7 +350,6 @@ function showFinalResults() {
     resultContainer.classList.remove('hidden');
     document.getElementById('btn-review-bookmarks')?.addEventListener('click', showBookmarkModal);
 }
-
 function showOneQuestionResult() {
     quizPage.classList.add('hidden');
     document.querySelector('.simulado-footer')?.classList.add('hidden');
@@ -382,29 +363,29 @@ function showOneQuestionResult() {
     resultContainer.classList.remove('hidden');
 }
 
-async function syncBookmarks() {
-    try {
-        await fetch(`${API_BASE_URL}/user/bookmarks`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(allUserBookmarks)
-        });
-    } catch (e) {
-        console.error("Falha ao sincronizar marcadores:", e);
-        showToast("Erro ao salvar o marcador.", true);
-    }
-}
+
+// async function syncBookmarks() {
+//     try {
+//         await fetch(`${API_BASE_URL}/user/bookmarks`, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify(allUserBookmarks)
+//         });
+//     } catch (e) {
+//         console.error("Falha ao sincronizar marcadores:", e);
+//         showToast("Erro ao salvar o marcador.", true);
+//     }
+// }
+
 
 function setupBookmarkButton(question) {
     const questionHash = getQuestionHash(question.enunciado);
     const existingBookmark = bookmarkedQuestions.find(bq => bq.questionHash === questionHash);
     btnBookmark.classList.toggle('bookmarked', !!existingBookmark);
-
     btnBookmark.onclick = (e) => {
         e.stopPropagation();
         toggleBookmarkOptions();
     };
-
     bookmarkOptions.onclick = (e) => {
         if (e.target.tagName === 'BUTTON') {
             const category = e.target.dataset.category;
@@ -414,53 +395,73 @@ function setupBookmarkButton(question) {
     };
 }
 
-function handleBookmark(question, category) {
+
+async function handleBookmark(question, category) {
     const questionHash = getQuestionHash(question.enunciado);
-    // CORREÇÃO: Pega o ID do simulado da URL usando a função que já existe.
-    const simuladoId = getProgressKey(); 
+    const simuladoId = new URLSearchParams(window.location.search).get('id');
+    const bookmarkData = {
+        simulado_id: simuladoId,
+        question_hash: String(questionHash),
+        enunciado: question.enunciado,
+        category: category,
+    };
 
-    const indexInAll = allUserBookmarks.findIndex(b => b.simulado_id === simuladoId && Number(b.question_hash) === questionHash);
-
-    if (indexInAll > -1) {
-        if (allUserBookmarks[indexInAll].category === category) {
-            allUserBookmarks.splice(indexInAll, 1);
-        } else {
-            allUserBookmarks[indexInAll].category = category;
-        }
-    } else {
-        allUserBookmarks.push({
-            simulado_id: simuladoId, // Agora o simuladoId estará correto.
-            question_hash: String(questionHash),
-            enunciado: question.enunciado,
-            category: category
-        });
+    // Verifica se o favorito já existe localmente e se a categoria é a mesma
+    const localIndex = bookmarkedQuestions.findIndex(bq => bq.questionHash === questionHash);
+    let shouldDelete = false;
+    if (localIndex > -1 && bookmarkedQuestions[localIndex].category === category) {
+        shouldDelete = true;
     }
     
-    const indexInLocal = bookmarkedQuestions.findIndex(bq => bq.questionHash === questionHash);
-    if (indexInLocal > -1) {
-        if (bookmarkedQuestions[indexInLocal].category === category) {
-            bookmarkedQuestions.splice(indexInLocal, 1);
-        } else {
-            bookmarkedQuestions[indexInLocal].category = category;
-        }
-    } else {
-        bookmarkedQuestions.push({ questionHash, category, enunciado: question.enunciado });
-    }
+    try {
+        if (shouldDelete) {
+            // Se o favorito existe e a categoria é a mesma, remove
+            const response = await fetch(`${API_BASE_URL}/user/bookmark`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ simulado_id: simuladoId, question_hash: String(questionHash) })
+            });
+            if (!response.ok) throw new Error('Falha ao remover o favorito.');
+            
+            // Atualiza o estado local
+            bookmarkedQuestions.splice(localIndex, 1);
+            showToast('Favorito removido.');
 
-    btnBookmark.classList.toggle('bookmarked', bookmarkedQuestions.some(bq => bq.questionHash === questionHash));
-    
-    syncBookmarks();
+        } else {
+            // Se não existe ou a categoria é diferente, adiciona ou atualiza
+            const response = await fetch(`${API_BASE_URL}/user/bookmark`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookmarkData)
+            });
+            if (!response.ok) throw new Error('Falha ao salvar o favorito.');
+
+            // Atualiza o estado local
+            if (localIndex > -1) {
+                bookmarkedQuestions[localIndex].category = category; // Atualiza categoria
+            } else {
+                bookmarkedQuestions.push({ questionHash, category, enunciado: question.enunciado }); // Adiciona novo
+            }
+            showToast('Favorito salvo!');
+        }
+        
+        // Atualiza a interface do botão
+        btnBookmark.classList.toggle('bookmarked', !shouldDelete);
+        
+    } catch (error) {
+        console.error("Erro ao gerenciar favorito:", error);
+        showToast(error.message, true);
+    }
 }
+
 
 function toggleBookmarkOptions() {
     bookmarkOptions.classList.toggle('hidden');
 }
-
 function showBookmarkModal() {
     const modal = document.getElementById('bookmark-modal');
     const body = document.getElementById('bookmark-modal-body');
     const categories = { 'review-later': 'Revisar Depois', 'difficult': 'Difíceis', 'favorite': 'Favoritas' };
-
     body.innerHTML = Object.keys(categories).map(catKey => {
         const questionsInCategory = bookmarkedQuestions.filter(bq => bq.category === catKey);
         if (questionsInCategory.length === 0) return '';
@@ -471,31 +472,25 @@ function showBookmarkModal() {
             </div>
         `;
     }).join('');
-
     modal.classList.remove('hidden');
     document.getElementById('btn-close-modal').onclick = () => modal.classList.add('hidden');
     modal.onclick = (e) => { if (e.target === modal) modal.classList.add('hidden'); };
 }
-
 function handleArrowKeySelection(key) {
     const radios = Array.from(document.querySelectorAll('input[name="alternativa"]'));
     if (!radios.length) return;
     let currentIndex = radios.findIndex(r => r.checked);
-
     if (key === 'ArrowDown') {
         currentIndex = (currentIndex + 1) % radios.length;
     } else if (key === 'ArrowUp') {
         currentIndex = (currentIndex - 1 + radios.length) % radios.length;
     }
-
     radios[currentIndex].checked = true;
     handleAnswerSelection(radios[currentIndex].value, radios[currentIndex].parentElement);
 }
-
 function getProgressKey() {
     return new URLSearchParams(window.location.search).get('id');
 }
-
 async function saveProgress() {
     try {
         const simuladoId = getProgressKey();
@@ -516,7 +511,6 @@ async function saveProgress() {
         showError("Não foi possível salvar seu progresso.");
     }
 }
-
 async function clearProgress() {
     const simuladoId = getProgressKey();
     try {
@@ -529,7 +523,6 @@ async function clearProgress() {
         console.error("Failed to clear progress on server", e);
     }
 }
-
 async function checkForSavedProgress() {
     const simuladoId = getProgressKey();
     try {
@@ -537,13 +530,11 @@ async function checkForSavedProgress() {
         if (!response.ok) return false;
         const progress = await response.json();
         if (!progress || Object.keys(progress).length === 0) return false;
-
         currentQuestionIndex = progress.currentQuestionIndex || 0;
         score = progress.score || 0;
         isReviewMode = progress.isReviewMode || false;
         
         const findQuestionByHash = (hash) => originalQuestions.find(q => getQuestionHash(q.enunciado) === hash);
-
         if (isReviewMode && progress.reviewQuestions) {
             quizData.questoes = progress.reviewQuestions.map(findQuestionByHash).filter(Boolean);
             incorrectQuestions = progress.incorrectQuestions.map(findQuestionByHash).filter(Boolean);
@@ -558,16 +549,13 @@ async function checkForSavedProgress() {
         return false;
     }
 }
-
 function showError(message, isFatal = false) {
     console.error(message);
     showToast(message, true);
-
     if (isFatal) {
         quizPage.innerHTML = `<div class="card" style="text-align: center;"><p>${message} Tente <a href="index.html">voltar para o início</a>.</p></div>`;
     }
 }
-
 function logIncorrectAnswer(question) {
     const questionHash = getQuestionHash(question.enunciado);
     if (!incorrectQuestionsLog[questionHash]) {
@@ -580,7 +568,6 @@ function logIncorrectAnswer(question) {
     incorrectQuestionsLog[questionHash].count++;
     saveIncorrectAnswerLog();
 }
-
 async function saveIncorrectAnswerLog() {
     try {
         await fetch(`${API_BASE_URL}/user/incorrect_answers`, {
@@ -592,7 +579,6 @@ async function saveIncorrectAnswerLog() {
         console.error("Falha ao salvar o log de respostas incorretas:", e);
     }
 }
-
 async function loadIncorrectAnswerLog() {
     try {
         const response = await fetch(`${API_BASE_URL}/user/incorrect_answers`);
@@ -614,11 +600,9 @@ async function loadIncorrectAnswerLog() {
         incorrectQuestionsLog = {};
     }
 }
-
 async function sendIncorrectAnswerLog() {
     const log = incorrectQuestionsLog;
     if (!log || Object.keys(log).length === 0) return;
-
     try {
         await fetch(`${API_BASE_URL}/user/stats`, {
             method: 'POST',

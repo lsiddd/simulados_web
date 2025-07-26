@@ -1,5 +1,4 @@
 :root {
-    /* --- IMPROVEMENT: Light Theme (Default) --- */
     --cor-fundo-principal: #f8fafc;
     --cor-fundo-secundario: #f1f5f9;
     --cor-card: #ffffff;
@@ -19,7 +18,6 @@
     --transition-speed: 0.2s;
 }
 
-/* --- IMPROVEMENT: Dark Theme --- */
 body[data-theme="dark"] {
     --cor-fundo-principal: #0f172a;
     --cor-fundo-secundario: #1e293b;
@@ -38,7 +36,6 @@ body[data-theme="dark"] {
     --cor-shadow: rgba(0, 0, 0, 0.2);
 }
 
-/* --- Base Styles --- */
 *,
 *::before,
 *::after {
@@ -60,7 +57,6 @@ body {
     padding: 1.5rem;
 }
 
-/* --- Header Styles --- */
 .simulado-header {
     border-bottom: 1px solid var(--cor-borda);
     padding-bottom: 1.5rem;
@@ -107,7 +103,6 @@ body {
     transition: width 0.3s ease-in-out;
 }
 
-/* --- Card Styles --- */
 .card {
     background-color: var(--cor-card);
     border-radius: 12px;
@@ -156,7 +151,6 @@ body[data-theme="dark"] .badge {
 }
 
 
-/* --- Button Styles --- */
 .button {
     display: inline-block;
     font-size: 0.95rem;
@@ -301,7 +295,6 @@ body[data-theme="dark"] .badge {
     margin-top: 2rem;
 }
 
-/* --- Bookmarking --- */
 .bookmark-container {
     position: relative;
 }
@@ -360,7 +353,6 @@ body[data-theme="dark"] .badge {
     background-color: var(--cor-fundo-secundario);
 }
 
-/* --- Modal styles --- */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -413,7 +405,6 @@ body[data-theme="dark"] .badge {
     margin-bottom: 0.5rem;
 }
 
-/* --- Theme switcher --- */
 .theme-switcher {
     background: none;
     border: 1px solid var(--cor-borda);
@@ -432,7 +423,6 @@ body[data-theme="dark"] .badge {
     transform: rotate(15deg) scale(1.1);
 }
 
-/* --- Notification Toast --- */
 .error-toast {
     position: fixed;
     bottom: 2rem;
@@ -460,7 +450,6 @@ body[data-theme="dark"] .badge {
     display: none !important;
 }
 
-/* --- Homepage & Grids --- */
 .main-header {
     text-align: center;
     margin-bottom: 2rem;
@@ -479,7 +468,6 @@ body[data-theme="dark"] .badge {
     gap: 1.5rem;
 }
 
-/* --- Tab Navigation Styles --- */
 .tab-nav {
     display: flex;
     gap: 0.5rem;
