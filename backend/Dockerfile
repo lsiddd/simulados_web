@@ -1,45 +1,66 @@
-FROM python:3.11-slim as builder
+# backend/Dockerfile
+
+# --- Builder Stage ---
+# This stage compiles the application and its dependencies.
+FROM rust:1.82-slim-bullseye as builder
+
+WORKDIR /app
+
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    pkg-config \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip wheel
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-FROM python:3.11-slim
+
+# 1. Copy only dependency manifests
+# Docker will cache this layer. It will only be invalidated if these two files change.
+COPY Cargo.toml Cargo.lock ./
+
+# 2. Build a dummy project to compile and cache all dependencies.
+# This is the longest step and the most important one to cache.
+RUN mkdir src && \
+    echo "fn main() {println!(\"Dummy build for caching dependencies\")}" > src/main.rs && \
+    cargo build --release
+
+# Clean up the dummy source file and artifacts
+RUN rm -rf src && \
+    rm -f target/release/deps/simulados_backend*
+
+# 3. Copy the actual source code.
+# This layer will be invalidated if any file in `src` changes, but the
+# expensive dependency build from the layer above will still be cached.
+COPY ./src ./src
+
+# 4. Build the actual application code.
+# This will be much faster as all dependencies are already compiled.
+RUN cargo build --release
+
+# --- Final Stage ---
+# This stage creates the small, final production image.
+FROM debian:bullseye-slim
+
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
+    libssl1.1 \
+    ca-certificates \
     sqlite3 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-RUN addgroup --system --gid 1001 app && \
-    adduser --system --uid 1001 --ingroup app appuser
-COPY --from=builder /opt/venv /opt/venv
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/target/release/simulados-backend /app/simulados-backend
+
+# Copy the application data. Changes to simulados will NOT invalidate the build stages.
+COPY ./simulados /app/simulados
+
+# Create the directory for user data
+RUN mkdir -p /app/user_data
+
 WORKDIR /app
-COPY . .
-RUN mkdir -p user_data simulados && \
-    chown -R appuser:app /app && \
-    chown -R appuser:app /opt/venv
-USER appuser
-ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONHASHSEED=random
+
+# Set the log level. Use "debug" for development to see the new logs.
+# For production, you can switch this back to "info".
+ENV RUST_LOG="simulados_backend=debug,actix_web=info"
 EXPOSE 5000
-# CMD is now in 'shell' form to use the GUNICORN_CMD_ARGS environment variable
-# from docker-compose.yml, resolving the worker configuration conflict. 'exec'
-# ensures Gunicorn runs as PID 1, handling signals properly.
-CMD exec gunicorn \
-     --bind 0.0.0.0:5000 \
-     $GUNICORN_CMD_ARGS \
-     --worker-connections 1000 \
-     --max-requests 1000 \
-     --max-requests-jitter 100 \
-     --preload \
-     --timeout 30 \
-     --keep-alive 5 \
-     --log-level info \
-     app:app
+
+CMD ["/app/simulados-backend"]

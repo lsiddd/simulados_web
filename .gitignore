@@ -2,3 +2,4 @@ files.txt
 backend/simulados/*.json
 frontend/nginx/auth/.htpasswd
 backend/user_data/*
+target

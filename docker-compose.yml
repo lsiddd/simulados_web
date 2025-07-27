@@ -1,12 +1,14 @@
+# ./docker-compose.yml
+---
 services:
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      - FLASK_ENV=production
-      - PYTHONUNBUFFERED=1
-      - GUNICORN_CMD_ARGS=--workers=6 --threads=4 --worker-class=gthread
-      - SQLITE_CACHE_SIZE=-100000  # 100MB cache
+      # We can keep this on debug for now, it's very helpful!
+      - RUST_LOG=simulados_backend=debug,actix_web=debug
     expose:
       - 5000
     volumes:
@@ -22,7 +24,14 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+    
+    # FIX: Add a dependency on Redis being healthy before starting the backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
     healthcheck:
+      # This healthcheck remains the same
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/simulados"]
       interval: 30s
       timeout: 10s
@@ -83,6 +92,14 @@ services:
     command: redis-server --save "" --maxmemory 256mb --maxmemory-policy allkeys-lru
     networks:
       - simulados_net
+    
+    # FIX: Add a healthcheck to the Redis container
+    healthcheck:
+      # Use redis-cli to PING the server to check its status
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   simulados_net:

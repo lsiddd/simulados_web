@@ -1,7 +1,0 @@
-Flask==2.3.3
-Werkzeug==2.3.7
-gunicorn==21.2.0
-orjson==3.9.7
-apsw==3.43.0.0
-pyinotify
-redis
