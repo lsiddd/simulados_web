@@ -56,12 +56,16 @@ services:
     entrypoint: /bin/sh
     command: -c "
         apk add --no-cache openssl curl &&
-        if [ ! -f /etc/nginx/ssl/privkey.pem ]; then
-          echo 'Gerando certificados SSL autoassinados...';
-          openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/privkey.pem -out /etc/nginx/ssl/fullchain.pem -subj '/CN=localhost';
-          echo 'Certificados gerados com sucesso.';
+        CERT_FILE=\"/etc/nginx/ssl/fullchain.pem\" &&
+        KEY_FILE=\"/etc/nginx/ssl/privkey.pem\" &&
+        DAYS_TO_EXPIRY=30 &&
+        EXPIRY_SECONDS=$((DAYS_TO_EXPIRY * 86400)) &&
+        if [ ! -f \"$$CERT_FILE\" ] || ! openssl x509 -in \"$$CERT_FILE\" -checkend \"$$EXPIRY_SECONDS\" -noout >/dev/null 2>&1; then
+          echo \"Certificado SSL não encontrado ou expirando em menos de $$DAYS_TO_EXPIRY dias. Gerando um novo...\";
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout \"$$KEY_FILE\" -out \"$$CERT_FILE\" -subj '/CN=localhost';
+          echo 'Certificado gerado com sucesso.';
         else
-          echo 'Certificados SSL já existem.';
+          echo 'Certificado SSL existente é válido.';
         fi &&
         nginx -g 'daemon off;'
       "

@@ -93,9 +93,7 @@ savedProgressList.addEventListener('click', async function(e) {
             try {
                 
                 const response = await fetch(`${API_BASE_URL}/user/progress/${simuladoId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}) 
+                    method: 'DELETE'
                 });
                 if (!response.ok) throw new Error('Falha ao remover progresso.');
                 showToast('Progresso removido.');

@@ -66,13 +66,21 @@ class SimuladoHandler(pyinotify.ProcessEvent):
     def process_IN_MODIFY(self, event):
         self._invalidate_caches(event)
 
+    def process_IN_DELETE(self, event):
+        self._invalidate_caches(event)
+
+    def process_IN_MOVED_FROM(self, event):
+        self._invalidate_caches(event)
+
 
 wm = pyinotify.WatchManager()
 handler = SimuladoHandler()
 notifier = pyinotify.ThreadedNotifier(wm, handler)
 notifier.daemon = True
 notifier.start()
-wdd = wm.add_watch(SIMULADOS_DIR, pyinotify.IN_MODIFY)
+# FIX: Watch for modifications, deletions, and moves to prevent stale cache.
+mask = pyinotify.IN_MODIFY | pyinotify.IN_DELETE | pyinotify.IN_MOVED_FROM
+wdd = wm.add_watch(SIMULADOS_DIR, mask)
 
 
 # ### MODIFIED DATABASE HANDLING ###
@@ -124,7 +132,7 @@ def init_db_explicitly():
             CREATE TABLE IF NOT EXISTS theme (id INTEGER PRIMARY KEY CHECK (id = 1), value TEXT);
             CREATE TABLE IF NOT EXISTS progress (simulado_id TEXT PRIMARY KEY, data TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
             CREATE INDEX IF NOT EXISTS idx_progress_updated ON progress(updated_at);
-            CREATE TABLE IF NOT EXISTS incorrect_answers (question_hash TEXT PRIMARY KEY, count INTEGER, enunciado TEXT, simulado_id TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS incorrect_answers (question_hash TEXT, count INTEGER, enunciado TEXT, simulado_id TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (question_hash, simulado_id));
             CREATE INDEX IF NOT EXISTS idx_incorrect_simulado ON incorrect_answers(simulado_id);
             CREATE TABLE IF NOT EXISTS bookmarks (simulado_id TEXT, question_hash TEXT, enunciado TEXT, category TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (simulado_id, question_hash));
             CREATE INDEX IF NOT EXISTS idx_bookmarks_simulado ON bookmarks(simulado_id);
@@ -182,6 +190,8 @@ def get_simulados_list():
 
 @app.route("/api/simulados/<simulado_id>", methods=["GET"])
 def get_simulado_data(simulado_id):
+    # FIX: Using secure_filename prevents path traversal attacks. This was
+    # already correctly implemented.
     secure_id = secure_filename(simulado_id)
     cache_key = f"simulado:{secure_id}"
     if redis_client:
@@ -314,7 +324,7 @@ def handle_theme():
         return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/api/user/progress/<simulado_id>", methods=["GET", "POST"])
+@app.route("/api/user/progress/<simulado_id>", methods=["GET", "POST", "DELETE"])
 def handle_progress(simulado_id):
     conn = get_db()
     try:
@@ -326,7 +336,11 @@ def handle_progress(simulado_id):
             )
             conn.commit()
             return jsonify({"message": "Progress saved"})
-        else:
+        elif request.method == "DELETE":
+            conn.execute("DELETE FROM progress WHERE simulado_id = ?", (simulado_id,))
+            conn.commit()
+            return jsonify({"message": "Progress deleted"})
+        else:  # GET
             row = conn.execute(
                 "SELECT data FROM progress WHERE simulado_id=?", (simulado_id,)
             ).fetchone()

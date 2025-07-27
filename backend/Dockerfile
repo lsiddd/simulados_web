@@ -29,15 +29,17 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONHASHSEED=random
 EXPOSE 5000
-CMD ["gunicorn", \
-     "--bind", "0.0.0.0:5000", \
-     "--workers", "4", \
-     "--worker-class", "sync", \
-     "--worker-connections", "1000", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "100", \
-     "--preload", \
-     "--timeout", "30", \
-     "--keep-alive", "5", \
-     "--log-level", "info", \
-     "app:app"]
+# CMD is now in 'shell' form to use the GUNICORN_CMD_ARGS environment variable
+# from docker-compose.yml, resolving the worker configuration conflict. 'exec'
+# ensures Gunicorn runs as PID 1, handling signals properly.
+CMD exec gunicorn \
+     --bind 0.0.0.0:5000 \
+     $GUNICORN_CMD_ARGS \
+     --worker-connections 1000 \
+     --max-requests 1000 \
+     --max-requests-jitter 100 \
+     --preload \
+     --timeout 30 \
+     --keep-alive 5 \
+     --log-level info \
+     app:app
