@@ -2,7 +2,7 @@
 
 # --- Builder Stage ---
 # This stage compiles the application and its dependencies.
-FROM rust:1.82-slim-bullseye as builder
+FROM rust:1.82-slim-bullseye AS builder
 
 WORKDIR /app
 
