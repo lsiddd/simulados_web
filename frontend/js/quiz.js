@@ -80,7 +80,8 @@ function addEventListeners() {
 }
 /**
  * Initializes the quiz, fetching data and setting up the initial state.
- * It handles resuming from saved progress, starting a new quiz, or loading a single bookmarked question.
+ * It prioritizes using prefetched data from sessionStorage for an instant start.
+ * It also handles resuming from saved progress, starting a new quiz, or loading a single bookmarked question.
  * @param {string} simuladoId - The ID of the quiz to load.
  */
 async function startSimulado(simuladoId) {
@@ -89,24 +90,57 @@ async function startSimulado(simuladoId) {
         const isOneQuestion = urlParams.get('one') === '1';
         const targetSimuladoId = sessionStorage.getItem('targetSimuladoId');
         const targetQuestionHash = sessionStorage.getItem('targetQuestionHash');
-        const [quizResponse, bookmarksResponse] = await Promise.all([
-            fetch(`${API_BASE_URL}/simulados/${simuladoId}`),
+
+        // --- MODIFIED IMPLEMENTATION: CHECK FOR PREFETCHED DATA ---
+        let dataFromCache = null;
+        const prefetchedDataJSON = sessionStorage.getItem(`quiz_${simuladoId}`);
+
+        if (prefetchedDataJSON) {
+            console.log(`[Quiz] Using prefetched data for quiz ${simuladoId}.`);
+            try {
+                // Try to parse the cached data
+                dataFromCache = JSON.parse(prefetchedDataJSON);
+            } catch (e) {
+                // If parsing fails, the data is corrupt. Remove it and let it fetch from the network.
+                console.error("Failed to parse prefetched data, will fetch from network.", e);
+                sessionStorage.removeItem(`quiz_${simuladoId}`);
+            }
+        }
+
+        // If we have valid cached data, resolve it immediately. Otherwise, create a network fetch request.
+        const quizDataPromise = dataFromCache
+            ? Promise.resolve(dataFromCache)
+            : fetch(`${API_BASE_URL}/simulados/${simuladoId}`).then(res => {
+                if (!res.ok) throw new Error('Falha ao carregar os dados do simulado.');
+                console.log(`[Quiz] Fetched quiz data for ${simuladoId} from network.`);
+                return res.json();
+              });
+        
+        // Fetch quiz data (from cache or network) and user bookmarks in parallel
+        const [quizResult, bookmarksResponse] = await Promise.all([
+            quizDataPromise,
             fetch(`${API_BASE_URL}/user/bookmarks`)
         ]);
-        if (!quizResponse.ok) throw new Error('Falha ao carregar os dados do simulado.');
-        quizData = await quizResponse.json();
+
+        quizData = quizResult;
+        // --- END OF MODIFIED IMPLEMENTATION ---
+
         originalQuestions = quizData.questoes.map((q, index) => ({ ...q, originalIndex: index }));
+        
         if (bookmarksResponse.ok) {
             allUserBookmarks = await bookmarksResponse.json();
         } else {
             console.error("Não foi possível carregar os marcadores do usuário.");
         }
+
         document.title = quizData.titulo;
         quizTitle.textContent = quizData.titulo;
+        
         if (isOneQuestion && targetSimuladoId === simuladoId && targetQuestionHash) {
             handleOneQuestionMode();
             return;
         }
+
         const shouldStartNew = urlParams.get('start') === 'true';
         if (shouldStartNew) {
             await clearProgress();
@@ -118,6 +152,7 @@ async function startSimulado(simuladoId) {
             resetQuizState();
             Analytics.track('quiz_started', { quizId: quizData.id, totalQuestions: originalQuestions.length });
         }
+
         bookmarkedQuestions = allUserBookmarks
             .filter(b => b.simulado_id === simuladoId)
             .map(b => ({
@@ -125,7 +160,9 @@ async function startSimulado(simuladoId) {
                 category: b.category,
                 enunciado: b.enunciado
             }));
+            
         displayCurrentQuestion();
+
     } catch (error) {
         showError(error.message, true);
     }

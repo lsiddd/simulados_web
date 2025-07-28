@@ -11,9 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs();
     initializeHomepage();
 });
-/**
- * Fetches the list of quizzes, then renders the main list and saved progress.
- */
+// In ./frontend/js/home.js
+
 async function initializeHomepage() {
     try {
         const response = await fetch(`${API_BASE_URL}/simulados`);
@@ -21,6 +20,17 @@ async function initializeHomepage() {
         allSimulados = await response.json();
         renderSimuladosList();
         renderSavedProgress(); 
+
+        // --- NEW IMPLEMENTATION: AGGRESSIVE PREFETCHING ---
+        // After rendering the critical page content, start prefetching all quiz data
+        // in the background to ensure instant quiz starts.
+        if (allSimulados && allSimulados.length > 0) {
+            console.log(`[Prefetch] Starting prefetch for ${allSimulados.length} quizzes.`);
+            // We use Promise.allSettled to fetch in parallel without stopping if one fails.
+            Promise.allSettled(allSimulados.map(simulado => prefetchQuizData(simulado.id)));
+        }
+        // --- END OF NEW IMPLEMENTATION ---
+
     } catch (error) {
         console.error(error);
         simuladosGrid.innerHTML = `<p style="text-align: center;">Erro ao carregar os simulados. Tente recarregar a página.</p>`;
@@ -177,3 +187,26 @@ async function renderAllBookmarkedQuestions() {
         bookmarkedTabContent.innerHTML = `<p style="text-align: center;">Erro ao carregar as questões marcadas.</p>`;
     }
 }
+/**
+ * Fetches quiz data in the background and stores it in sessionStorage.
+ * This is a non-critical function; failures are logged but not thrown.
+ * @param {string} quizId The ID of the quiz to prefetch.
+ */
+const prefetchQuizData = async (quizId) => {
+  // Avoid re-fetching if data is already in the session
+  if (sessionStorage.getItem(`quiz_${quizId}`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/simulados/${quizId}`);
+    if (!response.ok) {
+      console.warn(`[Prefetch] Failed to prefetch quiz ${quizId}. Status: ${response.status}`);
+      return;
+    }
+    const data = await response.json();
+    sessionStorage.setItem(`quiz_${quizId}`, JSON.stringify(data));
+  } catch (error) {
+    console.warn(`[Prefetch] Error prefetching quiz ${quizId}:`, error);
+  }
+};
